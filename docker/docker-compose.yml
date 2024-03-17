@@ -1,0 +1,41 @@
+version: '3'
+
+services:
+
+  app:
+    build: php
+    container_name: app
+    depends_on:
+      - postgres
+    volumes:
+      - ../:/var/www/app
+
+  postgres:
+    image: postgres:15.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: 'postgres'
+      POSTGRES_PASSWORD: 'postgres'
+      POSTGRES_DB: 'ghibli'
+    ports:
+      - "5432:5432"
+    volumes:
+      - .:/docker-entrypoint-initdb.d
+
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d tasks" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+    volumes:
+      - ../:/var/www/app
+      - ../docker/nginx:/etc/nginx/conf.d/
